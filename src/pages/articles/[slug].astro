@@ -14,7 +14,11 @@ export async function getStaticPaths() {
 
 const { article } = Astro.props;
 const { Content, headings } = await render(article);
-const toc = headings.filter((heading) => heading.depth === 2);
+const toc: { depth: number; slug: string; text: string; children: { depth: number; slug: string; text: string }[] }[] = [];
+for (const heading of headings) {
+  if (heading.depth === 2) toc.push({ depth: heading.depth, slug: heading.slug, text: heading.text, children: [] });
+  else if (heading.depth === 3 && toc.length > 0) toc[toc.length - 1].children.push(heading);
+}
 const { title, date, category, tags, summary } = article.data;
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -57,6 +61,15 @@ const jsonLd = {
                     <span class="toc-index">{String(index + 1).padStart(2, '0')}</span>
                     <span>{heading.text}</span>
                   </a>
+                  {heading.children.length > 0 && (
+                    <ol class="toc-sub">
+                      {heading.children.map((child) => (
+                        <li>
+                          <a href={`#${child.slug}`}>{child.text}</a>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
                 </li>
               ))}
             </ol>
@@ -74,7 +87,7 @@ const jsonLd = {
     const byId = new Map(
       links.map((link) => [decodeURIComponent((link.getAttribute('href') || '').slice(1)), link]),
     );
-    const headings = [...document.querySelectorAll('.prose h2')];
+    const headings = [...document.querySelectorAll('.prose h2, .prose h3')];
     if (headings.length && 'IntersectionObserver' in window) {
       const observer = new IntersectionObserver(
         (entries) => {
@@ -88,6 +101,119 @@ const jsonLd = {
         { rootMargin: '-20% 0px -65% 0px', threshold: [0.1, 0.5, 1] },
       );
       for (const heading of headings) observer.observe(heading);
+    }
+  </script>
+  <script>
+    const sources = [...document.querySelectorAll('.mermaid-source')];
+    if (sources.length) {
+      const mermaid = (await import('mermaid')).default;
+      const fontFamily = '"Insights Sans Latin", "Insights Sans", "PingFang SC", "Microsoft YaHei", sans-serif';
+      const light = {
+        darkMode: false,
+        background: 'transparent',
+        fontFamily,
+        fontSize: '15px',
+        primaryColor: '#f3eee7',
+        primaryTextColor: '#1a1916',
+        primaryBorderColor: '#9f2d2d',
+        secondaryColor: '#fbf3ea',
+        secondaryTextColor: '#1a1916',
+        secondaryBorderColor: '#cfc6ba',
+        tertiaryColor: '#eef3f7',
+        tertiaryTextColor: '#1a1916',
+        tertiaryBorderColor: '#cfc6ba',
+        lineColor: '#6a625a',
+        textColor: '#1a1916',
+        mainBkg: '#f3eee7',
+        nodeBorder: '#9f2d2d',
+        nodeTextColor: '#1a1916',
+        edgeLabelBackground: '#fffcf8',
+        clusterBkg: '#f6f4f1',
+        titleColor: '#1a1916',
+      };
+      const dark = {
+        darkMode: true,
+        background: 'transparent',
+        fontFamily,
+        fontSize: '15px',
+        primaryColor: '#2c2824',
+        primaryTextColor: '#f4f0ea',
+        primaryBorderColor: '#f0a598',
+        secondaryColor: '#2a2118',
+        secondaryTextColor: '#f4f0ea',
+        secondaryBorderColor: '#4a453e',
+        tertiaryColor: '#17232c',
+        tertiaryTextColor: '#f4f0ea',
+        tertiaryBorderColor: '#4a453e',
+        lineColor: '#c2bbb1',
+        textColor: '#f4f0ea',
+        mainBkg: '#2c2824',
+        nodeBorder: '#f0a598',
+        nodeTextColor: '#f4f0ea',
+        edgeLabelBackground: '#1d1c19',
+        clusterBkg: '#1b1a17',
+        titleColor: '#f4f0ea',
+      };
+
+      const paint = async () => {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        mermaid.initialize({
+          startOnLoad: false,
+          securityLevel: 'loose',
+          theme: 'base',
+          look: 'classic',
+          fontFamily,
+          htmlLabels: false,
+          flowchart: {
+            htmlLabels: false,
+            curve: 'basis',
+            padding: 18,
+            nodeSpacing: 48,
+            rankSpacing: 64,
+            wrappingWidth: 220,
+            useMaxWidth: false,
+          },
+          themeVariables: isDark ? dark : light,
+        });
+        for (let index = 0; index < sources.length; index += 1) {
+          const source = sources[index];
+          const view = source.parentElement?.querySelector('.mermaid-view');
+          if (!(view instanceof HTMLElement)) continue;
+          const id = `diagram-${index}-${isDark ? 'dark' : 'light'}-${Date.now()}`;
+          const { svg } = await mermaid.render(id, (source.textContent || '').trim());
+          view.innerHTML = svg;
+          const drawn = view.querySelector('svg');
+          const box = drawn?.viewBox?.baseVal;
+          if (drawn && box && box.width > 0) {
+            const pad = 18;
+            const width = box.width + pad * 2;
+            const height = box.height + pad * 2;
+            drawn.setAttribute('viewBox', `${box.x - pad} ${box.y - pad} ${width} ${height}`);
+            drawn.setAttribute('width', String(Math.ceil(width)));
+            drawn.setAttribute('height', String(Math.ceil(height)));
+            drawn.style.width = `${width}px`;
+            drawn.style.maxWidth = 'none';
+            drawn.style.height = `${height}px`;
+          }
+        }
+      };
+
+      let chain = Promise.resolve();
+      const schedule = () => {
+        chain = chain.then(paint).catch((error) => {
+          console.error(error);
+          for (const source of sources) {
+            const view = source.parentElement?.querySelector('.mermaid-view');
+            if (view && !view.querySelector('svg')) view.textContent = '示意图暂时无法显示';
+          }
+        });
+      };
+
+      schedule();
+      new MutationObserver(schedule).observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-theme'],
+      });
     }
   </script>
 </Base>

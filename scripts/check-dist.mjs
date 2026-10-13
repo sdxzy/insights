@@ -44,8 +44,16 @@ function normalize(value) {
 
 function markdownLines(markdown) {
   const body = markdown.split(/^---\s*$/m).slice(2).join('---');
-  return body
-    .split('\n')
+  const lines = [];
+  let fence = false;
+  for (const raw of body.split('\n')) {
+    if (/^\s*```/.test(raw)) {
+      fence = !fence;
+      continue;
+    }
+    lines.push(raw);
+  }
+  return lines
     .map((line) => line.replace(/^>\s?/, ''))
     .filter((line) => !/^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line))
     .map((line) => {
@@ -60,7 +68,7 @@ function markdownLines(markdown) {
       }
       return line.replace(/^#{1,6}\s+/, '').replace(/^\s*[-*]\s+/, '').replace(/^\s*\d+\.\s+/, '');
     })
-    .map((line) => line.replace(/<([^>]+)>/g, '$1').replace(/\*/g, ''))
+    .map((line) => line.replace(/<(https?:\/\/[^>\s]+)>/g, '$1').replace(/\*/g, ''))
     .map((line) => line.trim())
     .filter(Boolean);
 }
@@ -115,7 +123,9 @@ for (const snippet of ['让经济平稳着陆的底层代码', '经济学', '202
   if (!homeHtml.includes(snippet)) fail(`首页缺少 ${snippet}`);
   if (!articleHtml.includes(snippet)) fail(`文章页缺少 ${snippet}`);
 }
-if (!articleHtml.includes('Hall 证明了"老百姓花钱看的是未来"')) fail('直引号被改写');
+if (!articleHtml.includes('Hall 证明了"老百姓花钱看未来"')) fail('直引号被改写');
+if (!articleHtml.includes('零基础也能看懂')) fail('文章页缺少新摘要');
+if (!homeHtml.includes('零基础也能看懂')) fail('首页缺少新摘要');
 for (const marker of ['【背景知识】', '【类比】', '【类比 / 背景知识】']) {
   const expected = markdown.split(marker).length - 1;
   const actual = visibleText(articleHtml).split(marker).length - 1;
@@ -125,15 +135,22 @@ for (const cls of ['callout-background', 'callout-analogy', 'callout-mixed', 'pr
   if (!articleHtml.includes(cls)) fail(`文章页缺少样式类 ${cls}`);
 }
 
-const ids = [...articleHtml.matchAll(/<h2[^>]*id="([^"]+)"/g)].map((match) => match[1]);
-if (ids.length !== 7) fail(`二级标题应为 7 个，实际 ${ids.length}`);
+const h2ids = [...articleHtml.matchAll(/<h2[^>]*id="([^"]+)"/g)].map((match) => match[1]);
+const h3ids = [...articleHtml.matchAll(/<h3[^>]*id="([^"]+)"/g)].map((match) => match[1]);
+if (h2ids.length !== 11) fail(`二级标题应为 11 个，实际 ${h2ids.length}`);
+if (h3ids.length !== 12) fail(`三级标题应为 12 个，实际 ${h3ids.length}`);
+const ids = [...h2ids, ...h3ids];
 const tocHrefs = [...articleHtml.matchAll(/<nav class="toc"[\s\S]*?<\/nav>/g)]
   .flatMap((match) => [...match[0].matchAll(/href="#([^"]+)"/g)].map((item) => item[1]));
-if (tocHrefs.length !== 7) fail(`目录链接应为 7 个，实际 ${tocHrefs.length}`);
+if (tocHrefs.length !== ids.length) fail(`目录链接应为 ${ids.length} 个，实际 ${tocHrefs.length}`);
 for (const href of tocHrefs) {
   const id = decodeURIComponent(href);
   if (!ids.includes(id)) fail(`目录锚点不存在：${href}`);
 }
+if (!articleHtml.includes('class="mermaid-source"')) fail('文章页缺少 mermaid 源码');
+if (!articleHtml.includes('flowchart LR') || !articleHtml.includes('央行定利率')) fail('mermaid 源码不完整');
+const rows = articleHtml.match(/<tr[\s>]/g) || [];
+if (rows.length !== 21) fail(`名词表应为 21 行，实际 ${rows.length}`);
 
 for (const file of files.filter((item) => item.endsWith('.html') || item.endsWith('.css'))) {
   const text = await readFile(file, 'utf8');
