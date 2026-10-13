@@ -5,16 +5,12 @@ export type Article = CollectionEntry<'articles'>;
 export const SITE = {
   name: '解读站',
   tagline: 'Mark 的主题解读',
-  description: '把复杂的事讲到能站住。Mark 的主题解读，从经济学到科技与人工智能。',
+  description: '把复杂的事讲到能站住。Mark 的主题解读。',
   repo: 'https://github.com/sdxzy/insights',
 };
 
-const CATEGORY_ORDER = ['经济学', '科技', 'AI'];
-
 export const CATEGORY_BLURBS: Record<string, string> = {
   经济学: '宏观、货币与稳定政策。从官方材料出发，把模型讲成能用的直觉。',
-  科技: '技术怎样被造出来，又怎样改变行业与生活。',
-  AI: '模型、产品与影响。少口号，多机制。',
 };
 
 export function withBase(path = ''): string {
@@ -51,11 +47,9 @@ export function groupByCategory(articles: Article[]): [string, Article[]][] {
     else map.set(key, [article]);
   }
   return [...map.entries()].sort((a, b) => {
-    const ia = CATEGORY_ORDER.indexOf(a[0]);
-    const ib = CATEGORY_ORDER.indexOf(b[0]);
-    const ra = ia === -1 ? CATEGORY_ORDER.length : ia;
-    const rb = ib === -1 ? CATEGORY_ORDER.length : ib;
-    if (ra !== rb) return ra - rb;
+    const latestA = a[1][0]?.data.date.getTime() ?? 0;
+    const latestB = b[1][0]?.data.date.getTime() ?? 0;
+    if (latestA !== latestB) return latestB - latestA;
     return a[0].localeCompare(b[0], 'zh-CN');
   });
 }

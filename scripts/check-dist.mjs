@@ -103,6 +103,14 @@ for (const line of markdownLines(markdown)) {
 }
 
 const homeHtml = await readFile(home, 'utf8');
+const homeCategories = [...homeHtml.matchAll(/class="category-block"[^>]*id="([^"]+)"|id="([^"]+)"[^>]*class="category-block"/g)].map(
+  (match) => match[1] || match[2],
+);
+if (homeCategories.length !== 1 || homeCategories[0] !== '经济学') {
+  fail(`首页应只有分类「经济学」，实际：${homeCategories.join('、') || '（无）'}`);
+}
+if (homeHtml.includes('id="科技"') || homeHtml.includes('id="AI"')) fail('首页出现了空分类');
+
 for (const snippet of ['让经济平稳着陆的底层代码', '经济学', '2026年10月14日', '诺贝尔奖', '宏观经济', '货币政策']) {
   if (!homeHtml.includes(snippet)) fail(`首页缺少 ${snippet}`);
   if (!articleHtml.includes(snippet)) fail(`文章页缺少 ${snippet}`);
