@@ -1,0 +1,93 @@
+---
+import Base from '../../layouts/Base.astro';
+import TagList from '../../components/TagList.astro';
+import { articleHref, categoryHref, formatDate, getArticles, isoDate, tagLinks, withBase } from '../../lib/content';
+import { render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const articles = await getArticles();
+  return articles.map((article) => ({
+    params: { slug: article.id },
+    props: { article },
+  }));
+}
+
+const { article } = Astro.props;
+const { Content, headings } = await render(article);
+const toc = headings.filter((heading) => heading.depth === 2);
+const { title, date, category, tags, summary } = article.data;
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: title,
+  datePublished: isoDate(date),
+  description: summary,
+  inLanguage: 'zh-CN',
+  keywords: tags.join(', '),
+  author: { '@type': 'Person', name: 'Mark' },
+  publisher: { '@type': 'Organization', name: '解读站' },
+  mainEntityOfPage: new URL(articleHref(article.id), Astro.site).href,
+};
+---
+
+<Base title={title} description={summary} activeCategory={category} showProgress ogType="article">
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(jsonLd).replace(/</g, '\\u003c')} />
+  <div class="shell">
+    <header class="article-hero">
+      <p class="article-kicker"><a href={categoryHref(category)}>{category}</a></p>
+      <h1>{title}</h1>
+      <div class="article-meta">
+        <time datetime={isoDate(date)}>{formatDate(date)}</time>
+        <TagList tags={tagLinks(tags)} />
+      </div>
+      <p class="lede">{summary}</p>
+    </header>
+    <div class="article-layout">
+      <div class="prose">
+        <Content />
+      </div>
+      {
+        toc.length > 0 && (
+          <nav class="toc" aria-label="目录">
+            <p class="toc-label">目录</p>
+            <ol>
+              {toc.map((heading, index) => (
+                <li>
+                  <a href={`#${heading.slug}`}>
+                    <span class="toc-index">{String(index + 1).padStart(2, '0')}</span>
+                    <span>{heading.text}</span>
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        )
+      }
+    </div>
+    <nav class="article-end" aria-label="继续阅读">
+      <a href={categoryHref(category)}>← {category}</a>
+      <a href={withBase()}>全部文章</a>
+    </nav>
+  </div>
+  <script>
+    const links = [...document.querySelectorAll('.toc a')];
+    const byId = new Map(
+      links.map((link) => [decodeURIComponent((link.getAttribute('href') || '').slice(1)), link]),
+    );
+    const headings = [...document.querySelectorAll('.prose h2')];
+    if (headings.length && 'IntersectionObserver' in window) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          const visible = entries
+            .filter((entry) => entry.isIntersecting)
+            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+          if (!visible) return;
+          for (const link of links) link.classList.remove('is-current');
+          byId.get(visible.target.id)?.classList.add('is-current');
+        },
+        { rootMargin: '-20% 0px -65% 0px', threshold: [0.1, 0.5, 1] },
+      );
+      for (const heading of headings) observer.observe(heading);
+    }
+  </script>
+</Base>

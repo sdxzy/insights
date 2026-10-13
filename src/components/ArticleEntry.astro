@@ -1,0 +1,27 @@
+---
+import TagList from './TagList.astro';
+
+interface Props {
+  title: string;
+  href: string;
+  dateLabel: string;
+  dateIso: string;
+  summary: string;
+  tags: { name: string; href: string }[];
+  index: number;
+  level?: 'h2' | 'h3';
+}
+
+const { title, href, dateLabel, dateIso, summary, tags, index, level = 'h3' } = Astro.props;
+const Heading = level;
+---
+
+<article class="entry">
+  <p class="entry-index">{String(index).padStart(2, '0')}</p>
+  <div>
+    <Heading class="entry-title"><a href={href}>{title}</a></Heading>
+    <p class="entry-meta"><time datetime={dateIso}>{dateLabel}</time></p>
+    <p class="entry-summary">{summary}</p>
+    <TagList tags={tags} />
+  </div>
+</article>

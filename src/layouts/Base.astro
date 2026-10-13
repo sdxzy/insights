@@ -1,0 +1,106 @@
+---
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { SITE, getArticles, groupByCategory, withBase } from '../lib/content';
+
+interface Props {
+  title: string;
+  description?: string;
+  activeCategory?: string;
+  showProgress?: boolean;
+  ogType?: 'website' | 'article';
+}
+
+const {
+  title,
+  description = SITE.description,
+  activeCategory,
+  showProgress = false,
+  ogType = 'website',
+} = Astro.props;
+
+const articles = await getArticles();
+const categories = groupByCategory(articles).map(([name]) => name);
+const home = withBase();
+const isHome = Astro.url.pathname === home;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const fullTitle = title === SITE.name ? `${SITE.name} · ${SITE.tagline}` : `${title} · ${SITE.name}`;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <script is:inline>
+      (function () {
+        try {
+          var stored = localStorage.getItem('insights-theme');
+          var theme =
+            stored === 'light' || stored === 'dark'
+              ? stored
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light';
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {}
+      })();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical.href} />
+    <link rel="icon" href={withBase('favicon.svg')} type="image/svg+xml" />
+    <meta name="theme-color" content="#f6f4f1" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#131210" media="(prefers-color-scheme: dark)" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:locale" content="zh_CN" />
+    <meta property="og:url" content={canonical.href} />
+    <meta name="twitter:card" content="summary" />
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip" href="#main">跳到正文</a>
+    {showProgress && <div class="progress" data-progress aria-hidden="true"></div>}
+    <Header categories={categories} activeCategory={activeCategory} isHome={isHome} />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer />
+    <script>
+      const root = document.documentElement;
+      const button = document.querySelector('[data-theme-toggle]');
+
+      function syncButton() {
+        if (!(button instanceof HTMLButtonElement)) return;
+        const dark = root.dataset.theme === 'dark';
+        button.setAttribute('aria-label', dark ? '切换到浅色模式' : '切换到深色模式');
+        button.setAttribute('aria-pressed', String(dark));
+      }
+
+      syncButton();
+      button?.addEventListener('click', () => {
+        const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+        root.dataset.theme = next;
+        try {
+          localStorage.setItem('insights-theme', next);
+        } catch (e) {}
+        syncButton();
+      });
+
+      const bar = document.querySelector('[data-progress]');
+      if (bar instanceof HTMLElement) {
+        const onScroll = () => {
+          const doc = document.documentElement;
+          const max = doc.scrollHeight - doc.clientHeight;
+          const ratio = max > 0 ? doc.scrollTop / max : 0;
+          bar.style.transform = `scaleX(${ratio})`;
+        };
+        onScroll();
+        document.addEventListener('scroll', onScroll, { passive: true });
+      }
+    </script>
+  </body>
+</html>

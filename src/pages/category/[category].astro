@@ -1,0 +1,39 @@
+---
+import Base from '../../layouts/Base.astro';
+import ArticleList from '../../components/ArticleList.astro';
+import { CATEGORY_BLURBS, categoryHref, getArticles, groupByCategory, withBase } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const groups = groupByCategory(await getArticles());
+  return groups.map(([category, articles]) => ({
+    params: { category },
+    props: { category, articles },
+  }));
+}
+
+const { category, articles } = Astro.props;
+const blurb = CATEGORY_BLURBS[category] ?? `收录「${category}」分类下的解读。`;
+const others = groupByCategory(await getArticles()).filter(([name]) => name !== category);
+---
+
+<Base title={category} description={blurb} activeCategory={category}>
+  <div class="shell">
+    <header class="page-intro">
+      <p class="eyebrow">分类</p>
+      <h1 class="page-title">{category}</h1>
+      <p class="page-lead">{blurb}</p>
+    </header>
+    <nav class="filters" aria-label="分类">
+      <a class="chip" href={withBase()}>全部</a>
+      <a class="chip" href={categoryHref(category)} aria-current="page">{category}</a>
+      {
+        others.map(([name]) => (
+          <a class="chip" href={categoryHref(name)}>
+            {name}
+          </a>
+        ))
+      }
+    </nav>
+    <ArticleList articles={articles} level="h2" />
+  </div>
+</Base>

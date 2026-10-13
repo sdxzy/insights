@@ -1,0 +1,13 @@
+---
+import Base from '../layouts/Base.astro';
+import { withBase } from '../lib/content';
+---
+
+<Base title="找不到这一页" description="这个地址没有对应的解读。">
+  <div class="shell not-found">
+    <p class="eyebrow">404</p>
+    <h1>这一页不在目录里。</h1>
+    <p>链接可能写错了，或者文章还没放上来。</p>
+    <p><a href={withBase()}>回到首页</a></p>
+  </div>
+</Base>

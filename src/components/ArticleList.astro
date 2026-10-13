@@ -1,0 +1,28 @@
+---
+import ArticleEntry from './ArticleEntry.astro';
+import { articleHref, formatDate, isoDate, tagLinks, type Article } from '../lib/content';
+
+interface Props {
+  articles: Article[];
+  level?: 'h2' | 'h3';
+}
+
+const { articles, level = 'h3' } = Astro.props;
+---
+
+<div class="entry-list">
+  {
+    articles.map((article, index) => (
+      <ArticleEntry
+        level={level}
+        index={index + 1}
+        title={article.data.title}
+        href={articleHref(article.id)}
+        dateLabel={formatDate(article.data.date)}
+        dateIso={isoDate(article.data.date)}
+        summary={article.data.summary}
+        tags={tagLinks(article.data.tags)}
+      />
+    ))
+  }
+</div>

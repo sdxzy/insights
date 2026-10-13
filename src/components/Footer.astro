@@ -1,0 +1,19 @@
+---
+import { SITE, withBase } from '../lib/content';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="shell footer-inner">
+    <div>
+      <p class="footer-name">{SITE.name}</p>
+      <p>{SITE.tagline}。文章依据公开材料整理，背景知识与类比在文中单独标出。</p>
+    </div>
+    <div>
+      <p><a href={withBase()}>首页</a></p>
+      <p><a href={SITE.repo}>源码与投稿说明</a></p>
+      <p>© {year} {SITE.name}</p>
+    </div>
+  </div>
+</footer>

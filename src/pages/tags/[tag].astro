@@ -1,0 +1,42 @@
+---
+import Base from '../../layouts/Base.astro';
+import ArticleList from '../../components/ArticleList.astro';
+import { collectTags, getArticles, tagHref, withBase } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const articles = await getArticles();
+  const tags = collectTags(articles);
+  return tags.map((tag) => ({
+    params: { tag: tag.name },
+    props: {
+      tag: tag.name,
+      articles: articles.filter((article) => article.data.tags.includes(tag.name)),
+    },
+  }));
+}
+
+const { tag, articles } = Astro.props;
+const description = `标签「${tag}」下的 ${articles.length} 篇解读。`;
+const allTags = collectTags(await getArticles());
+---
+
+<Base title={tag} description={description}>
+  <div class="shell">
+    <header class="page-intro">
+      <p class="eyebrow">标签</p>
+      <h1 class="page-title">{tag}</h1>
+      <p class="page-lead">{description}</p>
+    </header>
+    <nav class="filters" aria-label="全部标签">
+      <a class="chip" href={withBase()}>全部文章</a>
+      {
+        allTags.map((item) => (
+          <a class="chip" href={tagHref(item.name)} aria-current={item.name === tag ? 'page' : undefined}>
+            {item.name}
+          </a>
+        ))
+      }
+    </nav>
+    <ArticleList articles={articles} level="h2" />
+  </div>
+</Base>
