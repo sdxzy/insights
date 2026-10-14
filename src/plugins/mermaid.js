@@ -30,7 +30,7 @@ export const mermaidPlugin = {
             properties: {
               className: ['mermaid-view'],
               role: 'img',
-              ariaLabel: '新凯恩斯模型：利率、需求、物价与预期的循环',
+              ariaLabel: '流程图',
             },
             children: [],
           },

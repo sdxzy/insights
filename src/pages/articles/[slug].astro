@@ -88,22 +88,28 @@ const jsonLd = {
       links.map((link) => [decodeURIComponent((link.getAttribute('href') || '').slice(1)), link]),
     );
     const headings = [...document.querySelectorAll('.prose h2, .prose h3')];
-    if (headings.length && 'IntersectionObserver' in window) {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          const visible = entries
-            .filter((entry) => entry.isIntersecting)
-            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-          if (!visible) return;
-          for (const link of links) link.classList.remove('is-current');
-          byId.get(visible.target.id)?.classList.add('is-current');
-        },
-        { rootMargin: '-20% 0px -65% 0px', threshold: [0.1, 0.5, 1] },
-      );
-      for (const heading of headings) observer.observe(heading);
+    const markCurrent = () => {
+      const line = 96;
+      let current = null;
+      for (const heading of headings) {
+        if (heading.getBoundingClientRect().top <= line) current = heading;
+      }
+      for (const link of links) link.classList.remove('is-current');
+      if (current) byId.get(current.id)?.classList.add('is-current');
+    };
+    if (headings.length) {
+      markCurrent();
+      document.addEventListener('scroll', markCurrent, { passive: true });
+      window.addEventListener('resize', markCurrent);
     }
   </script>
   <script>
+    const quoteDiagramLabels = (source) =>
+      source.replace(/(\b[A-Za-z][\w-]*)\[([^"\]\n][^\n\]]*)\]/g, (all, id, label) => {
+        if (!/[()"']/.test(label)) return all;
+        return `${id}["${label.replaceAll('"', '#quot;')}"]`;
+      });
+
     const sources = [...document.querySelectorAll('.mermaid-source')];
     if (sources.length) {
       const mermaid = (await import('mermaid')).default;
@@ -180,7 +186,7 @@ const jsonLd = {
           const view = source.parentElement?.querySelector('.mermaid-view');
           if (!(view instanceof HTMLElement)) continue;
           const id = `diagram-${index}-${isDark ? 'dark' : 'light'}-${Date.now()}`;
-          const { svg } = await mermaid.render(id, (source.textContent || '').trim());
+          const { svg } = await mermaid.render(id, quoteDiagramLabels((source.textContent || '').trim()));
           view.innerHTML = svg;
           const drawn = view.querySelector('svg');
           const box = drawn?.viewBox?.baseVal;

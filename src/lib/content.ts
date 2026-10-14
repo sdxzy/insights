@@ -11,6 +11,7 @@ export const SITE = {
 
 export const CATEGORY_BLURBS: Record<string, string> = {
   经济学: '宏观、货币与稳定政策。从官方材料出发，把模型讲成能用的直觉。',
+  软件工程: '小步开发、自动回归和重构。把工程判断写成能执行的流程。',
 };
 
 export function withBase(path = ''): string {

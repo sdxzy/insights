@@ -70,6 +70,9 @@
   --mixed-callout: #f4f0f8;
   --mixed-callout-ink: #3d2a5c;
   --mixed-callout-badge: #5b3d8a;
+  --advice-callout: #eef6f1;
+  --advice-callout-ink: #1c4332;
+  --advice-callout-badge: #1f6b45;
   --selection: #f0d2cc;
   --font-sans: "Insights Sans Latin", "Insights Sans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", "WenQuanYi Micro Hei", "Droid Sans Fallback", sans-serif;
   --font-serif: "Insights Serif Latin", "Insights Serif", "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", var(--font-sans);
@@ -100,6 +103,9 @@
   --mixed-callout: #241e2c;
   --mixed-callout-ink: #e4daf2;
   --mixed-callout-badge: #c4b0e4;
+  --advice-callout: #15241c;
+  --advice-callout-ink: #d7eee2;
+  --advice-callout-badge: #8dceb0;
   --selection: #5a3330;
 }
 
@@ -627,6 +633,16 @@ img {
   margin: 0.95rem 0;
 }
 
+.prose h1 {
+  margin: 0 0 1.1rem;
+  font-family: var(--font-serif);
+  font-size: 1.7rem;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  scroll-margin-top: 5.5rem;
+}
+
 .prose h2 {
   margin: 2.5rem 0 0.85rem;
   font-family: var(--font-serif);
@@ -728,6 +744,24 @@ img {
   color: var(--mixed-callout-ink);
 }
 
+.callout-advice {
+  background: var(--advice-callout);
+  color: var(--advice-callout-ink);
+}
+
+li.callout {
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 0.95rem 0.85rem;
+  list-style: none;
+}
+
+li.callout > ul,
+li.callout > ol {
+  margin-top: 0.45rem;
+  margin-bottom: 0;
+}
+
 .callout-badge {
   display: inline-block;
   margin: 0 0.45em 0.15em 0;
@@ -753,13 +787,19 @@ img {
 
 [data-theme="dark"] .callout-badge-analogy,
 [data-theme="dark"] .callout-badge-background,
-[data-theme="dark"] .callout-badge-mixed {
+[data-theme="dark"] .callout-badge-mixed,
+[data-theme="dark"] .callout-badge-advice {
   color: #1a120f;
 }
 
 .callout-badge-mixed {
   background: var(--mixed-callout-badge);
   color: #1b1228;
+}
+
+.callout-badge-advice {
+  background: var(--advice-callout-badge);
+  color: #f4fff8;
 }
 
 [data-theme="light"] .callout-badge-background,
@@ -779,9 +819,11 @@ img {
 .table-scroll {
   margin: 1.4rem 0 1.6rem;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: var(--surface);
+  scrollbar-color: var(--line-strong) transparent;
 }
 
 .prose table {
@@ -807,9 +849,42 @@ img {
 
 .prose td:first-child,
 .prose th:first-child {
+  font-weight: 700;
+}
+
+.prose table:not(:has(th:nth-child(4))) td:first-child,
+.prose table:not(:has(th:nth-child(4))) th:first-child {
   width: 34%;
   min-width: 7.5rem;
-  font-weight: 700;
+}
+
+.prose table:has(th:nth-child(4)) {
+  width: max-content;
+  min-width: 100%;
+}
+
+.prose table:has(th:nth-child(4)) th,
+.prose table:has(th:nth-child(4)) td {
+  min-width: 10.5rem;
+  max-width: 18rem;
+}
+
+.table-scroll:has(th:nth-child(4)) th:first-child,
+.table-scroll:has(th:nth-child(4)) td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface);
+  box-shadow: 1px 0 0 var(--line);
+}
+
+.table-scroll:has(th:nth-child(4)) thead th:first-child {
+  background: var(--surface-2);
+  z-index: 2;
+}
+
+.table-scroll:has(th:nth-child(4)) tbody tr:nth-child(even) td:first-child {
+  background: var(--bg-accent);
 }
 
 .prose tbody tr:nth-child(even) td {
@@ -997,7 +1072,8 @@ img {
   .toc {
     position: static;
     order: -1;
-    max-height: none;
+    max-height: 16rem;
+    overflow: auto;
     padding: 0.9rem 1rem;
     border: 1px solid var(--line);
     border-radius: 14px;
